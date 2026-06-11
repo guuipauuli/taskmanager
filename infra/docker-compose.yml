@@ -59,6 +59,33 @@ services:
       timeout: 5s
       retries: 10
 
+  backend-tests:
+    image: maven:3.9-eclipse-temurin-21
+    working_dir: /workspace/backend
+    volumes:
+      - ../backend:/workspace/backend
+      - maven_cache:/root/.m2
+    command: ["./mvnw", "test"]
+    restart: "no"
+
+  liquibase-migrate:
+    image: liquibase/liquibase:4.29
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ../backend/src/main/resources:/workspace/resources
+    command:
+      [
+        "--searchPath=/workspace/resources",
+        "--changeLogFile=db/changelog/db.changelog-master.xml",
+        "--url=${SPRING_DATASOURCE_URL}",
+        "--username=${SPRING_DATASOURCE_USERNAME}",
+        "--password=${SPRING_DATASOURCE_PASSWORD}",
+        "update"
+      ]
+    restart: "no"
+
   backend:
     build:
       context: ../backend
@@ -69,12 +96,18 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      backend-tests:
+        condition: service_completed_successfully
+      liquibase-migrate:
+        condition: service_completed_successfully
     environment:
       SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL}
       SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME}
       SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD}
       SPRING_KAFKA_BOOTSTRAP_SERVERS: ${SPRING_KAFKA_BOOTSTRAP_SERVERS}
+      SPRING_LIQUIBASE_ENABLED: "false"
       SERVER_PORT: ${SERVER_PORT:-8080}
 
 volumes:
   postgres_data:
+  maven_cache:
