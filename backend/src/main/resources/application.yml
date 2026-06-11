@@ -20,7 +20,8 @@ spring:
       ddl-auto: none
     open-in-view: false
   liquibase:
-    change-log: classpath:db/changelog/db.changelog-master.yaml
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.xml
 
 management:
   endpoints:
