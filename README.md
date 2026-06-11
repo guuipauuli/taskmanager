@@ -17,10 +17,52 @@ taskmanager/
 ## Stack
 
 - Backend: Java 21, Spring Boot, Maven
-- Frontend: React, Vite
+- Frontend: React, TypeScript, Vite
 - Banco de dados: PostgreSQL 16
 - Mensageria: Kafka + Zookeeper
 - Orquestração local: Docker Compose
+
+## Arquitetura atual
+
+### Backend
+
+- API REST de tasks com CRUD completo em `/api/tasks`
+- Camadas orientadas a casos de uso (controller dependente de portas)
+- Liquibase em XML com separacao de changelogs `ddl/` e `dml/`
+- Publicacao e consumo de eventos de task via Kafka
+
+### Frontend
+
+- Estrutura modular por `core`, `shared`, `layout` e `features`
+- Feature `tasks` implementada com CRUD por componentes (sem grid generico)
+- Componentes de UI reutilizaveis para formulario, modal, botoes e tipografia
+- Hook generico de carregamento CRUD para evitar repeticao de fluxo assíncrono
+
+## Contrato de erro
+
+O backend responde erros com `ProblemDetail` enriquecido. Para validacoes de formulario, a resposta inclui `fieldErrors` por campo para o frontend destacar inputs invalidos.
+
+Exemplo de erro de validacao (HTTP 400):
+
+```json
+{
+	"detail": "Existem campos invalidos no formulario.",
+	"status": 400,
+	"title": "Validation error",
+	"code": "VALIDATION_ERROR",
+	"userSafe": true,
+	"fieldErrors": {
+		"title": "must not be blank",
+		"description": "must not be blank"
+	}
+}
+```
+
+No frontend:
+
+- normalizacao de erro fica centralizada no HTTP abstrato
+- exibicao de erro por campo fica nos componentes de formulario
+- erros de rede/timeout/backend indisponivel recebem fallback centralizado
 
 ## Desenvolvimento com GitHub Copilot
 
@@ -69,6 +111,14 @@ docker compose -f infra/docker-compose.yml up -d --build
 - Backend: `http://localhost:8080`
 - Healthcheck: `http://localhost:8080/actuator/health`
 
+### Endpoints de tasks
+
+- `GET /api/tasks`
+- `GET /api/tasks/{id}`
+- `POST /api/tasks`
+- `PUT /api/tasks/{id}`
+- `DELETE /api/tasks/{id}`
+
 PostgreSQL, Kafka e Zookeeper ficam acessíveis apenas na rede interna do Docker Compose por padrão.
 
 As portas expostas acima podem ser alteradas em `infra/.env`.
@@ -99,6 +149,45 @@ Parar o ambiente:
 docker compose -f infra/docker-compose.yml down
 ```
 
+## Smoke E2E (API)
+
+Comandos executados para validacao ponta a ponta:
+
+```bash
+# health
+curl -sS http://localhost:8080/actuator/health
+
+# create
+curl -sS -X POST http://localhost:8080/api/tasks \
+	-H 'Content-Type: application/json' \
+	-d '{"title":"E2E task","description":"created by smoke test"}'
+
+# list
+curl -sS http://localhost:8080/api/tasks
+
+# update
+curl -sS -X PUT http://localhost:8080/api/tasks/{id} \
+	-H 'Content-Type: application/json' \
+	-d '{"title":"E2E task updated","description":"updated by smoke test","status":"IN_PROGRESS"}'
+
+# validation error
+curl -sS -X POST http://localhost:8080/api/tasks \
+	-H 'Content-Type: application/json' \
+	-d '{"title":"","description":""}'
+
+# delete
+curl -sS -X DELETE http://localhost:8080/api/tasks/{id}
+```
+
+Resultado observado na ultima validacao:
+
+- Health: `200`
+- Create: `201`
+- List: `200`
+- Update: `200`
+- Validation error: `400` com `fieldErrors`
+- Delete: `204`
+
 ## CI
 
 O repositório possui workflows separados para backend e frontend:
@@ -108,7 +197,7 @@ O repositório possui workflows separados para backend e frontend:
 
 ## Estado atual
 
-- Backend inicializado com endpoint e actuator básicos
-- Frontend inicializado com React e build via Vite
+- Backend com CRUD de tasks, validacao estruturada e eventos via Kafka
+- Frontend TypeScript com CRUD por componentes e tratamento de erro centralizado
 - Infra local preparada com PostgreSQL, Kafka e Zookeeper
-- Configuração centralizada por variáveis de ambiente em `infra/.env`
+- Configuracao centralizada por variaveis de ambiente em `infra/.env`
