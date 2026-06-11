@@ -8,34 +8,31 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-public class JpaTaskRepositoryAdapter implements TaskRepositoryPort {
+public class JpaTaskRepositoryAdapter
+        extends AbstractJpaRepositoryAdapter<Task, TaskEntity, Long>
+        implements TaskRepositoryPort {
 
-    private final JpaTaskRepository repository;
-    private final TaskPersistenceMapper mapper;
-
-    public JpaTaskRepositoryAdapter(JpaTaskRepository repository) {
-        this.repository = repository;
-        this.mapper = new TaskPersistenceMapper();
+    public JpaTaskRepositoryAdapter(JpaTaskRepository repository, TaskPersistenceMapper mapper) {
+        super(repository, mapper);
     }
 
     @Override
     public Task save(Task task) {
-        TaskEntity saved = repository.save(mapper.toEntity(task));
-        return mapper.toDomain(saved);
+        return saveMapped(task);
     }
 
     @Override
     public Optional<Task> findById(Long id) {
-        return repository.findById(id).map(mapper::toDomain);
+        return findByIdMapped(id);
     }
 
     @Override
     public List<Task> findAll() {
-        return repository.findAll().stream().map(mapper::toDomain).toList();
+        return findAllMapped();
     }
 
     @Override
     public void deleteById(Long id) {
-        repository.deleteById(id);
+        deleteByIdMapped(id);
     }
 }

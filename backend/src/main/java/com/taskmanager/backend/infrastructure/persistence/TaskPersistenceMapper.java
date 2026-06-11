@@ -1,9 +1,12 @@
 package com.taskmanager.backend.infrastructure.persistence;
 
 import com.taskmanager.backend.domain.Task;
+import org.springframework.stereotype.Component;
 
-public class TaskPersistenceMapper {
+@Component
+public class TaskPersistenceMapper implements PersistenceMapper<Task, TaskEntity> {
 
+    @Override
     public TaskEntity toEntity(Task task) {
         TaskEntity entity = new TaskEntity();
         entity.setId(task.id());
@@ -14,6 +17,7 @@ public class TaskPersistenceMapper {
         return entity;
     }
 
+    @Override
     public Task toDomain(TaskEntity entity) {
         return new Task(
                 entity.getId(),
