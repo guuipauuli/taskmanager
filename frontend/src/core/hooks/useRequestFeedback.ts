@@ -12,7 +12,11 @@ export function useRequestFeedback() {
 
   const captureError = useCallback((error: unknown) => {
     const appError = toAppError(error);
-    setErrorMessage(appError.message);
+    if (appError.statusCode === undefined) {
+      setErrorMessage(appError.message);
+    } else {
+      setErrorMessage(null);
+    }
     setFieldErrors(appError.fieldErrors ?? {});
     return appError;
   }, []);

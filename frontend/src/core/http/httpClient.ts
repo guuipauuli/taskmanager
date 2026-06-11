@@ -38,7 +38,7 @@ function normalizeHttpError(statusCode: number, payload: BackendErrorPayload, ra
   if (statusCode === 400) {
     return new AppError(backendMessage || 'Requisicao invalida.', {
       statusCode,
-      code: payload.code || 'BAD_REQUEST',
+      code: payload.code || 'HTTP_ERROR',
       details: rawBody,
       fieldErrors,
     });
@@ -47,7 +47,7 @@ function normalizeHttpError(statusCode: number, payload: BackendErrorPayload, ra
   if (statusCode === 404) {
     return new AppError(backendMessage || 'Recurso nao encontrado.', {
       statusCode,
-      code: payload.code || 'NOT_FOUND',
+      code: payload.code || 'HTTP_ERROR',
       details: rawBody,
     });
   }
@@ -55,7 +55,7 @@ function normalizeHttpError(statusCode: number, payload: BackendErrorPayload, ra
   if (statusCode >= 500) {
     return new AppError(backendMessage || 'Falha interna no servidor.', {
       statusCode,
-      code: payload.code || 'SERVER_ERROR',
+      code: payload.code || 'HTTP_ERROR',
       details: rawBody,
     });
   }
@@ -149,7 +149,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
           payload,
         });
       }
-      dispatchHttpError(normalizeHttpError(response.status, payload, rawBody));
+      return dispatchHttpError(normalizeHttpError(response.status, payload, rawBody));
     }
 
     if (response.status === 204) {
@@ -185,7 +185,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       });
     }
 
-    dispatchHttpError(
+    return dispatchHttpError(
       new AppError('Falha de conexao. Verifique se o backend esta disponivel.', {
         code: 'NETWORK_ERROR',
       })
@@ -199,6 +199,8 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
       });
     }
   }
+
+  return undefined as T;
 }
 
 export const httpClient = {

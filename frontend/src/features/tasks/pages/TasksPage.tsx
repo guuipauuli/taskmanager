@@ -17,7 +17,6 @@ export function TasksPage() {
   const {
     tasks,
     status,
-    errorMessage,
     isSubmitting,
     fieldErrors,
     load,
@@ -76,7 +75,7 @@ export function TasksPage() {
     });
   };
 
-  const handleCreateSubmit = async (payload: CreateTaskPayload) => {
+  const handleCreateSubmit = async (payload: CreateTaskPayload): Promise<boolean> => {
     if (DEBUG_TASKS_PAGE) {
       console.info('[TasksPage] create submit');
     }
@@ -84,9 +83,10 @@ export function TasksPage() {
     if (success) {
       handleCloseModal();
     }
+    return success;
   };
 
-  const handleUpdateSubmit = async (taskId: number, payload: UpdateTaskPayload) => {
+  const handleUpdateSubmit = async (taskId: number, payload: UpdateTaskPayload): Promise<boolean> => {
     if (DEBUG_TASKS_PAGE) {
       console.info('[TasksPage] update submit', { taskId });
     }
@@ -94,6 +94,7 @@ export function TasksPage() {
     if (success) {
       handleCloseModal();
     }
+    return success;
   };
 
   const statusTone =
@@ -121,7 +122,6 @@ export function TasksPage() {
           onMove={(task, newStatus) => void handleMoveTask(task, newStatus)}
         />
       )}
-      {errorMessage ? <BodyText tone="error">{errorMessage}</BodyText> : null}
       <TaskFormModal
         isOpen={isModalOpen}
         mode={modalMode}
